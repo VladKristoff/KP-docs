@@ -1,0 +1,35 @@
+-- Таблица для хранения статистики пользователей по темам
+CREATE TABLE IF NOT EXISTS user_topic_stats (
+    id SERIAL PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    topic_id INTEGER NOT NULL,
+    total_answers INTEGER DEFAULT 0,
+    correct_answers INTEGER DEFAULT 0,
+    
+    -- Вычисляемое поле процента правильных ответов
+    correct_percent NUMERIC(5,2) GENERATED ALWAYS AS (
+        CASE 
+            WHEN total_answers > 0 
+            THEN (correct_answers::NUMERIC / total_answers * 100)
+            ELSE 0 
+        END
+    ) STORED,
+    
+    -- Внешние ключи
+    CONSTRAINT fk_user_topic_stats_users 
+        FOREIGN KEY (user_id) 
+        REFERENCES users(id) 
+        ON DELETE CASCADE,
+    
+    CONSTRAINT fk_user_topic_stats_topics 
+        FOREIGN KEY (topic_id) 
+        REFERENCES topics(id) 
+        ON DELETE RESTRICT,
+    
+    -- Уникальность: один пользователь - одна тема
+    CONSTRAINT unique_user_topic UNIQUE (user_id, topic_id)
+);
+
+-- Индексы для быстрых запросов
+CREATE INDEX IF NOT EXISTS idx_user_topic_stats_user ON user_topic_stats(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_topic_stats_topic ON user_topic_stats(topic_id);
